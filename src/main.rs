@@ -1,7 +1,7 @@
 use snake::GameCreator;
 
 fn main() {
-  let mut game = GameCreator::new_rand(12, 12); //, BoardVec::new(1, 2), BoardVec::new(3, 2));
+  let mut game = GameCreator::new_rand(10, 10); //, BoardVec::new(1, 2), BoardVec::new(3, 2));
   println!("{:?}", game);
 
   let mut i = 0;

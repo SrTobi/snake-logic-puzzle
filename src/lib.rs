@@ -1,17 +1,19 @@
 use core::fmt;
 use std::cell::Cell;
-use std::collections::HashMap;
 use std::mem;
 
-use board::{Board, BoardVec};
+use board::{Board, BoardUnionFind, BoardVec, BoardExplorer};
 use rand::seq::{IteratorRandom, SliceRandom};
 use rand::{thread_rng, Rng};
+
+use crate::board::BoardUnionId;
 
 pub mod ai;
 pub mod board;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Field {
+  Unknown,
   Snake,
   SnakeEnd,
   Empty,
@@ -34,32 +36,11 @@ impl Field {
     }
   }
 
-  pub fn max_snake_neighbours(self) -> i8 {
+  pub fn max_snake_neighbours(self) -> usize {
     match self {
       Field::Snake => 2,
       Field::SnakeEnd => 1,
-      Field::Empty => 4,
-    }
-  }
-}
-
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub enum ConnectPriority {
-  None,
-  Horizontal,
-  Vertical,
-}
-
-impl ConnectPriority {
-  fn from(a: BoardVec, b: BoardVec) -> Self {
-    assert_ne!(a, b);
-
-    if a.x == b.x {
-      Self::Horizontal
-    } else if a.y == b.y {
-      Self::Vertical
-    } else {
-      panic!("a and b must be either have same x or same y")
+      Field::Empty | Field::Unknown => 4,
     }
   }
 }
@@ -67,20 +48,22 @@ impl ConnectPriority {
 impl fmt::Display for Field {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
+      Field::Unknown => write!(f, " "),
       Field::Snake => write!(f, "+"),
       Field::SnakeEnd => write!(f, "X"),
-      Field::Empty => write!(f, " "),
+      Field::Empty => write!(f, "·"),
     }
   }
 }
 
 pub type GameBoard = Board<Field>;
+pub type Segment = usize;
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone)]
 pub struct GameCreator {
   board: GameBoard,
-  snakes_around: Board<i8>,
-  snake_allowed: Board<bool>,
+  snake_ends: (BoardVec, BoardVec),
+  unions: BoardUnionFind,
 }
 
 impl GameCreator {
@@ -103,13 +86,16 @@ impl GameCreator {
     assert!(a.dist(b) >= 2);
 
     let mut creator = Self {
-      board: Board::new(width, height, Field::Empty),
-      snakes_around: Board::new(width, height, 0),
-      snake_allowed: Board::new(width, height, true),
+      board: Board::new(width, height, Field::Unknown),
+      snake_ends: (a, b),
+      unions: BoardUnionFind::new(width, height),
     };
 
-    creator.set_field(a, Field::SnakeEnd);
-    creator.set_field(b, Field::SnakeEnd);
+    creator.set_snake(a);
+    creator.board[a] = Field::SnakeEnd;
+
+    creator.set_snake(b);
+    creator.board[b] = Field::SnakeEnd;
 
     creator
   }
@@ -131,143 +117,67 @@ impl GameCreator {
   }
 
   pub fn set_snake(&mut self, pos: BoardVec) {
-    self.set_field(pos, Field::Snake);
+    let field = self.field(pos);
+  
+    debug_assert_eq!(field, Field::Unknown);
+    debug_assert!(self.snake_allowed(pos));
+  
+    self.board[pos] = Field::Snake;
+
+    for p in self.board.get_pos_around_4(pos) {
+      if self.field(p).is_snake() {
+        let (merged, _) = self.unions.merge(pos, p);
+        debug_assert!(merged);
+      }
+    }
   }
 
   pub fn set_empty(&mut self, pos: BoardVec) {
-    self.set_field(pos, Field::Empty);
-  }
-
-  pub fn set_field(&mut self, pos: BoardVec, field: Field) {
-    let old = mem::replace(&mut self.board[pos], field);
-    assert_ne!(old, Field::SnakeEnd);
-
-    if old == field {
-      return;
-    }
-
-    fn snake_allowed(game: &GameCreator, pos: BoardVec) -> bool {
-      if game.field(pos).is_snake() {
-        return false;
-      }
-
-      let snakes_around = game.snakes_around[pos];
-      if snakes_around == 0 {
-        return true;
-      }
-
-      if snakes_around > 2 {
-        return false;
-      }
-
-      game
-        .pos_around(pos)
-        .filter(|&p| game.field(p).is_snake())
-        .all(|p| game.is_dangling_snake(p))
-    }
-
-    let d = if field.is_snake() { 1 } else { -1 };
-    for p in self.board.get_pos_around_4(pos) {
-      self.snakes_around[p] += d;
-      self.snake_allowed[p] = snake_allowed(self, p);
-      for p2 in self.board.get_pos_around_4(p) {
-        self.snake_allowed[p2] = snake_allowed(self, p2);
-      }
-    }
-
-    if field.is_snake() {
-      self.snake_allowed[pos] = false;
-    } else {
-      self.snake_allowed[pos] = snake_allowed(self, pos);
-    }
+    debug_assert_eq!(self.field(pos), Field::Empty);
+    self.board[pos] = Field::Snake;
   }
 
   pub fn snake_allowed(&self, pos: BoardVec) -> bool {
-    self.snake_allowed[pos]
+    if self.field(pos) != Field::Unknown {
+      return false;
+    }
+
+    let snakes_around = self.snakes_around(pos);
+    if snakes_around == 0 {
+      return true;
+    }
+
+    if snakes_around > 2 {
+      return false;
+    }
+
+    let mut first_seg: Option<BoardUnionId> = None;
+
+    self
+      .pos_around(pos)
+      .filter(|&p| self.field(p).is_snake())
+      .all(move |p| {
+        let seg = self.unions[p].id();
+        let segs_are_same = first_seg == Some(seg);
+        first_seg = Some(seg);
+        !segs_are_same && self.is_dangling_snake(p)
+      })
   }
+
 
   pub fn is_dangling_snake(&self, pos: BoardVec) -> bool {
     let field = self.field(pos);
-    field.is_snake() && self.snakes_around[pos] < field.max_snake_neighbours()
+    field.is_snake() && self.snakes_around(pos) < field.max_snake_neighbours()
   }
 
-  fn is_complete(&self) -> bool {
-    let mut snakes = 0;
-    let mut start = BoardVec::new(0, 0);
-    for pos in self.board.positions() {
-      match self.field(pos) {
-        Field::Snake => snakes += 1,
-        Field::SnakeEnd => start = pos,
-        Field::Empty => {}
-      }
-    }
-
-    let snakes = snakes;
-    let mut prev = start;
-    let mut cur = start;
-    let mut found = 0;
-
-    'next: loop {
-      for next in self.pos_around(cur) {
-        if next != prev {
-          let field = self.field(next);
-          if field == Field::SnakeEnd {
-            return found == snakes;
-          }
-          if field == Field::Snake {
-            prev = cur;
-            cur = next;
-            found += 1;
-            if found > snakes {
-              println!("Circle in\n{:?}", self);
-              panic!("Circlic Snake");
-            }
-            continue 'next;
-          }
-        }
-      }
-      return false;
-    }
+  pub fn snakes_around(&self, pos: BoardVec) -> usize {
+    self.board.get_around_4(pos).filter(|f| f.is_snake()).count()
   }
 
-  pub fn evolve(&mut self) -> (bool, bool) {
-    let rng = &mut thread_rng();
-    let dangling_snakes: Vec<_> = self
-      .board
-      .positions()
-      .filter(|&pos| self.is_dangling_snake(pos))
-      .collect();
+  fn is_snake_connected(&self) -> bool {
+    let (a, b) = self.snake_ends;
 
-    for &pos in dangling_snakes.iter() {
-      if self.is_dangling_snake(pos) {
-        let target = self.pos_around(pos).filter(|&p| self.snake_allowed(p)).choose(rng);
-        if let Some(target) = target {
-          self.set_snake(target);
-        }
-      }
-    }
-
-    let is_complete_old = !self.board.positions().any(|pos| self.is_dangling_snake(pos));
-    let is_complete = self.is_complete();
-    if !dangling_snakes.is_empty() && (is_complete || is_complete_old) || rng.gen_range(0..3) == 0 {
-      return (is_complete, is_complete_old);
-    }
-
-    let snakes: Vec<_> = self
-      .board
-      .positions()
-      .filter(|&pos| self.field(pos) == Field::Snake)
-      .collect();
-
-    let delete = rng.gen_range(0..2.max(snakes.len() / 10).min(5));
-    for &snake in snakes.choose_multiple(rng, delete) {
-      self.set_empty(snake);
-    }
-    if delete == 0 || snakes.is_empty() {
-      (is_complete, is_complete_old)
-    } else {
-      (false, false)
-    }
+    self.unions[a] == self.unions[b]
   }
 }
 

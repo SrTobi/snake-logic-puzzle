@@ -1,3 +1,17 @@
+/* 
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+enum FieldKnowledge {
+  Unknown,
+  Snake,
+  SnakeEnd,
+  Empty(u32),
+}
+
+*/
+
+
+
+
 /*use crate::board::{Board, BoardVec};
 use crate::{Field, Game};
 

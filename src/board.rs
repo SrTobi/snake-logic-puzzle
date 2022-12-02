@@ -1,6 +1,7 @@
 use core::fmt;
+use std::cell::Cell;
 use std::collections::VecDeque;
-use std::ops::{Add, Index, IndexMut, Neg, Sub};
+use std::ops::{self, Add, Index, IndexMut, Neg, Sub};
 
 use rand::distributions::Standard;
 use rand::prelude::Distribution;
@@ -91,6 +92,13 @@ impl Distribution<BoardVec> for Standard {
   }
 }
 
+fn pos_to_index(pos: BoardVec, width: usize, height: usize) -> Option<usize> {
+  match (usize::try_from(pos.x), usize::try_from(pos.y)) {
+    (Ok(x), Ok(y)) if x < width && y < height => Some(x + y * width),
+    _ => None,
+  }
+}
+
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Board<T> {
   pub width: u32,
@@ -110,11 +118,8 @@ impl<T> Board<T> {
     }
   }
 
-  fn pos_to_index(&self, pos: BoardVec) -> Option<usize> {
-    match (usize::try_from(pos.x), usize::try_from(pos.y)) {
-      (Ok(x), Ok(y)) if x < self.width as usize && y < self.height as usize => Some(x + y * (self.width as usize)),
-      _ => None,
-    }
+  pub fn pos_to_index(&self, pos: BoardVec) -> Option<usize> {
+    pos_to_index(pos, self.width as usize, self.height as usize)
   }
 
   pub fn get(&self, pos: BoardVec) -> Option<&T> {
@@ -132,7 +137,6 @@ impl<T> Board<T> {
   pub fn get_pos_around_4(&self, pos: BoardVec) -> impl Iterator<Item = BoardVec> + '_ {
     pos.neighbours_4().flat_map(|pos| self.get(pos).and(Some(pos)))
   }
-
 
   pub fn get_around_8(&self, pos: BoardVec) -> impl Iterator<Item = &T> {
     pos.neighbours_8().flat_map(|pos| self.get(pos))
@@ -255,5 +259,95 @@ impl<T> From<&Board<T>> for BoardExplorer {
       queue: VecDeque::new(),
       visited: Board::new(board.width, board.height, false),
     }
+  }
+}
+
+pub type BoardUnionId = usize;
+
+#[derive(Eq, Clone)]
+pub struct BoardUnion {
+  target: Cell<u32>,
+  size: usize,
+}
+
+impl BoardUnion {
+  fn new(id: u32) -> Self {
+    Self {
+      target: Cell::new(id),
+      size: 1,
+    }
+  }
+  pub fn id(&self) -> BoardUnionId {
+    self.target.get() as usize
+  }
+
+  pub fn size(&self) -> usize {
+    self.size
+  }
+}
+
+impl PartialEq for BoardUnion {
+  fn eq(&self, other: &Self) -> bool {
+    self.target == other.target
+  }
+}
+
+#[derive(Clone)]
+pub struct BoardUnionFind {
+  width: u32,
+  height: u32,
+  fields: Vec<BoardUnion>,
+}
+
+impl BoardUnionFind {
+  pub fn new(width: u32, height: u32) -> Self {
+    let fields = (0..width * height).map(BoardUnion::new).collect();
+
+    Self { width, height, fields }
+  }
+
+  pub fn merge(&mut self, a: BoardVec, b: BoardVec) -> (bool, &BoardUnion) {
+    let a = &self[a];
+    let b = &self[b];
+
+    if a == b {
+      let id = a.id();
+      (false, &self[id])
+    } else {
+      let (sup, sub) = if a.size() >= b.size() { (a, b) } else { (b, a) };
+
+      let size = sup.size() + sub.size();
+      sub.target.set(sup.id() as u32);
+
+      let sup = sup.id();
+      let sup = &mut self.fields[sup];
+      sup.size = size;
+      (true, sup)
+    }
+  }
+}
+
+impl ops::Index<BoardUnionId> for BoardUnionFind {
+  type Output = BoardUnion;
+
+  fn index(&self, id: BoardUnionId) -> &Self::Output {
+    let union = &self.fields[id];
+    let target = union.id();
+
+    if target == id {
+      union
+    } else {
+      let target = &self[target];
+      target.target.set(target.target.get());
+      target
+    }
+  }
+}
+
+impl ops::Index<BoardVec> for BoardUnionFind {
+  type Output = BoardUnion;
+
+  fn index(&self, pos: BoardVec) -> &Self::Output {
+    &self[pos_to_index(pos, self.width as usize, self.height as usize).unwrap() as BoardUnionId]
   }
 }
