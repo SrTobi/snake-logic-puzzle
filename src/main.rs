@@ -1,22 +1,72 @@
-use snake::GameCreator;
+use snake::board::{Board, BoardVec};
+use snake::{solve, Field, SolveResult, State};
 
 fn main() {
-  let mut game = GameCreator::new_rand(10, 10); //, BoardVec::new(1, 2), BoardVec::new(3, 2));
-  println!("{:?}", game);
-
-  let mut i = 0;
   loop {
-    i += 1;
-    let (complete, complete_old) = game.evolve();
-    //println!("{}:\n{:?}", i, game);
+    let game = State::new_rand(10, 10);
+    let mut fails = Vec::new();
+    let r = solve(game, usize::MAX / 2, &mut fails);
 
-    if complete_old || i % 10000 == 0 {
-      println!("{}:\n{:?}", i, game);
-    }
-
-    if complete && i > 10 {
-      break;
+    if let Err(res) = r {
+      println!("{:?}", res);
     }
   }
-  println!("{}:\n{:?}", i, game);
+}
+
+fn main2() {
+  let game = State::new_rand(10, 10); //new(11, 11, BoardVec::new(7, 8), BoardVec::new(8, 10));
+  println!("{:?}", game);
+
+  let mut s = Vec::new();
+  let r = solve(game, usize::MAX / 2, &mut s);
+  println!("{:?}", r);
+
+  if let Ok(SolveResult::Contradiction) = r {
+    s.sort_by_key(|s| u32::MAX - s.1.unknowns());
+
+    for (p, s) in s {
+      println!("{:?}", p);
+      println!("{:?}", s);
+    }
+  }
+}
+
+fn main3() {
+  let mut game = State::new(11, 11, BoardVec::new(7, 8), BoardVec::new(8, 10));
+
+  let board = "
+  x-----------x
+  |···+++··+++|
+  |·+++·+·++·+|
+  |·+···+·+··+|
+  |++·+++·+·++|
+  |+·++··++·+·|
+  |+·+··++·++·|
+  |+·++·+··+··|
+  |+··+++··++·|
+  |+++···+X·++|
+  |··++··+···+|
+  |···++++·X++|
+  x-----------x
+  ";
+
+  let mut it = board.chars().filter(|&c| "+·".contains(c));
+
+  for y in 0..11 {
+    for x in 0..11 {
+      let v = BoardVec::new(x, y);
+
+      if game.field(v) == Field::Unknown {
+        println!("{:?}", game);
+        game.set(
+          v,
+          match it.next().unwrap() {
+            '·' => Field::Empty,
+            '+' => Field::Snake,
+            _ => unreachable!(),
+          },
+        );
+      }
+    }
+  }
 }

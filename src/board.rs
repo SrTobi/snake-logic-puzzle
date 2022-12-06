@@ -264,17 +264,33 @@ impl<T> From<&Board<T>> for BoardExplorer {
 
 pub type BoardUnionId = usize;
 
-#[derive(Eq, Clone)]
-pub struct BoardUnion {
-  target: Cell<u32>,
-  size: usize,
+pub trait UnionFindData: Default + Copy {
+  fn merge(a: Self, b: Self) -> Self;
 }
 
-impl BoardUnion {
+impl UnionFindData for () {
+  fn merge(_: Self, _: Self) -> Self {}
+}
+
+impl UnionFindData for u32 {
+  fn merge(a: Self, b: Self) -> Self {
+    a + b
+  }
+}
+
+#[derive(Eq, Clone)]
+pub struct BoardUnion<D: UnionFindData> {
+  target: Cell<u32>,
+  size: usize,
+  data: Cell<D>,
+}
+
+impl<D: UnionFindData> BoardUnion<D> {
   fn new(id: u32) -> Self {
     Self {
       target: Cell::new(id),
       size: 1,
+      data: Cell::default(),
     }
   }
   pub fn id(&self) -> BoardUnionId {
@@ -284,29 +300,37 @@ impl BoardUnion {
   pub fn size(&self) -> usize {
     self.size
   }
+
+  pub fn data(&self) -> D {
+    self.data.get()
+  }
+
+  pub fn set_data(&self, data: D) {
+    self.data.set(data);
+  }
 }
 
-impl PartialEq for BoardUnion {
+impl<D: UnionFindData> PartialEq for BoardUnion<D> {
   fn eq(&self, other: &Self) -> bool {
     self.target == other.target
   }
 }
 
 #[derive(Clone)]
-pub struct BoardUnionFind {
+pub struct BoardUnionFind<D: UnionFindData = ()> {
   width: u32,
   height: u32,
-  fields: Vec<BoardUnion>,
+  fields: Vec<BoardUnion<D>>,
 }
 
-impl BoardUnionFind {
+impl<D: UnionFindData> BoardUnionFind<D> {
   pub fn new(width: u32, height: u32) -> Self {
     let fields = (0..width * height).map(BoardUnion::new).collect();
 
     Self { width, height, fields }
   }
 
-  pub fn merge(&mut self, a: BoardVec, b: BoardVec) -> (bool, &BoardUnion) {
+  pub fn merge(&mut self, a: BoardVec, b: BoardVec) -> (bool, &BoardUnion<D>) {
     let a = &self[a];
     let b = &self[b];
 
@@ -316,19 +340,21 @@ impl BoardUnionFind {
     } else {
       let (sup, sub) = if a.size() >= b.size() { (a, b) } else { (b, a) };
 
+      let data = D::merge(sup.data.get(), sub.data.get());
       let size = sup.size() + sub.size();
       sub.target.set(sup.id() as u32);
 
       let sup = sup.id();
       let sup = &mut self.fields[sup];
       sup.size = size;
+      sup.data.set(data);
       (true, sup)
     }
   }
 }
 
-impl ops::Index<BoardUnionId> for BoardUnionFind {
-  type Output = BoardUnion;
+impl<D: UnionFindData> ops::Index<BoardUnionId> for BoardUnionFind<D> {
+  type Output = BoardUnion<D>;
 
   fn index(&self, id: BoardUnionId) -> &Self::Output {
     let union = &self.fields[id];
@@ -344,8 +370,8 @@ impl ops::Index<BoardUnionId> for BoardUnionFind {
   }
 }
 
-impl ops::Index<BoardVec> for BoardUnionFind {
-  type Output = BoardUnion;
+impl<D: UnionFindData> ops::Index<BoardVec> for BoardUnionFind<D> {
+  type Output = BoardUnion<D>;
 
   fn index(&self, pos: BoardVec) -> &Self::Output {
     &self[pos_to_index(pos, self.width as usize, self.height as usize).unwrap() as BoardUnionId]
