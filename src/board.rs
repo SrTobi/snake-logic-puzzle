@@ -278,7 +278,7 @@ impl UnionFindData for u32 {
   }
 }
 
-#[derive(Eq, Clone)]
+#[derive(Eq, Clone, Debug)]
 pub struct BoardUnion<D: UnionFindData> {
   target: Cell<u32>,
   size: usize,
