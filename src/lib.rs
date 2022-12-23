@@ -7,6 +7,9 @@ use crate::board::BoardUnionId;
 
 pub mod ai;
 pub mod board;
+mod solver;
+
+pub use solver::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Field {
@@ -418,102 +421,3 @@ fn interesting_fields(state: &State) -> impl Iterator<Item = BoardVec> + '_ {
     state.field(pos) == Field::Unknown && state.pos_around(pos).any(|p| state.field(p) != Field::Unknown)
   })
 }*/
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum SolveResult {
-  Contradiction,
-  MaxDepth,
-}
-
-pub fn solve(
-  mut state: State,
-  rest_depth: usize,
-  fails: &mut impl Extend<(BoardVec, State)>,
-) -> Result<SolveResult, Box<State>> {
-  //println!("{:?}", state);
-  loop {
-    let mut changed = false;
-    for pos in state.board.positions() {
-      let field = state.field(pos);
-      if field.is_snake()
-        && state.is_dangling_snake(pos)
-        && state.unknown_around(pos) < field.max_snake_neighbours() - state.snakes_around(pos)
-      {
-        return Ok(SolveResult::Contradiction);
-      }
-
-      if field != Field::Unknown {
-        continue;
-      }
-
-      let snake_allowed = state.snake_allowed(pos);
-      let empty_allowed = state.empty_allowed(pos);
-
-      if !snake_allowed && !empty_allowed {
-        //if thread_rng().gen::<u16>() == 0 {
-        //  println!("{:?}", state);
-        //}
-        fails.extend([(pos, state)]);
-        return Ok(SolveResult::Contradiction);
-      } else if !snake_allowed {
-        state.set(pos, Field::Empty);
-        changed = true;
-      } else if !empty_allowed {
-        state.set(pos, Field::Snake);
-        changed = true;
-      }
-    }
-    if !changed {
-      break;
-    }
-  }
-
-  if rest_depth == 0 {
-    panic!("oh no");
-    //return Ok(SolveResult::MaxDepth);
-  }
-
-  let connected = state.is_snake_connected();
-
-  if connected == SnakeConnectedness::Distributed {
-    return Ok(SolveResult::Contradiction);
-  }
-
-  if !state.empty_policy.is_still_possible(state.unenclosed_empties) {
-    return Ok(SolveResult::Contradiction);
-  }
-
-  if state.unknowns == 0 {
-    return if connected == SnakeConnectedness::Connected {
-      Err(Box::new(state))
-    } else {
-      //println!("{:?}", state);
-      fails.extend([(BoardVec::new(-1, -1), state)]);
-      Ok(SolveResult::Contradiction)
-    };
-  }
-
-  for pos in state.board.positions() {
-    if state.field(pos) == Field::Unknown {
-      let snake_result = {
-        let mut s = state.clone();
-        s.set(pos, Field::Snake);
-        solve(s, rest_depth - 1, fails)?
-      };
-      let empty_result = {
-        let mut s = state.clone();
-        s.set(pos, Field::Empty);
-        solve(s, rest_depth - 1, fails)?
-      };
-
-      match (snake_result, empty_result) {
-        (SolveResult::Contradiction, SolveResult::Contradiction) => return Ok(SolveResult::Contradiction),
-        (SolveResult::Contradiction, SolveResult::MaxDepth) => state.set(pos, Field::Empty),
-        (SolveResult::MaxDepth, SolveResult::Contradiction) => state.set(pos, Field::Snake),
-        (SolveResult::MaxDepth, SolveResult::MaxDepth) => panic!("blbu"),
-      }
-    }
-  }
-
-  solve(state, rest_depth + 1, fails)
-}

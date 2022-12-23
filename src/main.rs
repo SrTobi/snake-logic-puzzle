@@ -1,5 +1,5 @@
 use snake::board::BoardVec;
-use snake::{solve, Field, SolveResult, State};
+use snake::{solve, Field, State};
 
 fn main() {
   let width = 10;
@@ -8,10 +8,13 @@ fn main() {
   let mut a = 0;
   loop {
     let game = State::new_rand(width, height, snake::EmptyPolicy::new_ascending(width, height));
-    let r = solve(game, usize::MAX / 2, &mut Throwaway);
+    let mut results = Vec::new();
+    solve(game, &mut results, 2);
 
-    if let Err(res) = r {
-      println!("{:?}", res);
+    if !results.is_empty() {
+      for ele in results {
+        println!("{:?}", ele);
+      }
       return;
     } else {
       println!("faild ({a})...");
@@ -20,7 +23,7 @@ fn main() {
   }
 }
 
-#[allow(unused)]
+/*#[allow(unused)]
 fn main2() {
   let game = State::new_rand(10, 10, snake::EmptyPolicy::Fix(5)); //new(11, 11, BoardVec::new(7, 8), BoardVec::new(8, 10));
   println!("{:?}", game);
@@ -37,7 +40,7 @@ fn main2() {
       println!("{:?}", s);
     }
   }
-}
+}*/
 
 #[allow(unused)]
 fn main3() {
@@ -103,9 +106,10 @@ fn main4() {
   ); //new(11, 11, BoardVec::new(7, 8), BoardVec::new(8, 10));
   println!("{:?}", game);
 
+  let mut results = Vec::new();
   //let mut s = Vec::new();
-  let r = solve(game, usize::MAX / 2, &mut Throwaway);
-  println!("{:?}", r);
+  solve(game, &mut results, 1);
+  println!("{:?}", results);
 
   /*if let Ok(SolveResult::Contradiction) = r {
     s.sort_by_key(|s| u32::MAX - s.1.unknowns());
