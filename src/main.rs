@@ -1,15 +1,14 @@
-use snake::board::{Board, BoardVec};
+use snake::board::BoardVec;
 use snake::{solve, Field, SolveResult, State};
 
-fn main4() {
+fn main() {
   let width = 10;
   let height = 10;
 
   let mut a = 0;
   loop {
     let game = State::new_rand(width, height, snake::EmptyPolicy::new_ascending(width, height));
-    let mut fails = Vec::new();
-    let r = solve(game, usize::MAX / 2, &mut fails);
+    let r = solve(game, usize::MAX / 2, &mut Throwaway);
 
     if let Err(res) = r {
       println!("{:?}", res);
@@ -21,6 +20,7 @@ fn main4() {
   }
 }
 
+#[allow(unused)]
 fn main2() {
   let game = State::new_rand(10, 10, snake::EmptyPolicy::Fix(5)); //new(11, 11, BoardVec::new(7, 8), BoardVec::new(8, 10));
   println!("{:?}", game);
@@ -39,6 +39,7 @@ fn main2() {
   }
 }
 
+#[allow(unused)]
 fn main3() {
   let mut game = State::new(
     11,
@@ -91,7 +92,8 @@ impl<T> Extend<T> for Throwaway {
   fn extend<I: IntoIterator<Item = T>>(&mut self, _: I) {}
 }
 
-fn main() {
+#[allow(unused)]
+fn main4() {
   let game = State::new(
     10,
     10,

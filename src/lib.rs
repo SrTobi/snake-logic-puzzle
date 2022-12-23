@@ -2,7 +2,6 @@ use core::fmt;
 use std::collections::HashMap;
 
 use board::{Board, BoardUnion, BoardUnionFind, BoardVec};
-use rand::{thread_rng, Rng};
 
 use crate::board::BoardUnionId;
 
@@ -82,7 +81,7 @@ impl EmptyPolicy {
       fields += max;
     }
 
-    println!("max: {max}");
+    //println!("max: {max}");
     Self::Ascending(Vec::new(), (max - 1) as usize)
   }
 
@@ -451,9 +450,9 @@ pub fn solve(
       let empty_allowed = state.empty_allowed(pos);
 
       if !snake_allowed && !empty_allowed {
-        if thread_rng().gen::<u16>() == 0 {
-          println!("{:?}", state);
-        }
+        //if thread_rng().gen::<u16>() == 0 {
+        //  println!("{:?}", state);
+        //}
         fails.extend([(pos, state)]);
         return Ok(SolveResult::Contradiction);
       } else if !snake_allowed {
