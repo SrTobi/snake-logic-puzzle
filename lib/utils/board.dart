@@ -12,6 +12,12 @@ class BoardVec {
 
   BoardVec operator +(BoardVec v) => BoardVec(x + v.x, y + v.y);
   BoardVec operator -(BoardVec v) => BoardVec(x - v.x, y - v.y);
+
+  @override
+  bool operator ==(Object other) => other is BoardVec && x == other.x && y == other.y;
+
+  @override
+  int get hashCode => Object.hash(x, y);
 }
 
 class Board<T> {
@@ -19,9 +25,11 @@ class Board<T> {
   final int height;
   final List<T> _fields;
 
-  Board(this.width, this.height, T Function() init) : _fields = List.generate(width * height, (index) => init());
+  Board(this.width, this.height, T Function(BoardVec) init)
+      : _fields = List.generate(width * height, (index) => init(calculate_pos(index, width)));
 
   T operator [](BoardVec pos) => get(pos)!;
+  void operator []=(BoardVec pos, T value) => _fields[index(pos)] = value;
 
   int index(BoardVec pos) => pos.y * width + pos.x;
 
@@ -34,4 +42,7 @@ class Board<T> {
       return _fields[i];
     }
   }
+
+  static int calculate_index(BoardVec pos, int width) => pos.y * width + pos.x;
+  static BoardVec calculate_pos(int index, int width) => BoardVec(index % width, index ~/ width);
 }
