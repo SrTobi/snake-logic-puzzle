@@ -1,10 +1,18 @@
 import 'package:logic_snake_puzzle/utils/board.dart';
 
 enum Field {
-  unknown,
-  empty,
-  snake,
-  snakeHead,
+  unknown(-1),
+  empty(-1),
+  snake(2),
+  snakeHead(1);
+
+  final int targetNeighbourSnakes;
+
+  const Field(this.targetNeighbourSnakes);
+}
+
+extension FieldExt on Field {
+  bool get isSnake => this == Field.snake || this == Field.snakeHead;
 }
 
 class EmptyPolicy {

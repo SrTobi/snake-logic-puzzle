@@ -47,6 +47,24 @@ class GameViewModel {
     }
   }
 
+  bool isConnectionInvalid(FieldInfo a, FieldInfo b) {
+    bool inner(FieldInfo a, FieldInfo b) {
+      final snakesAround = fields.itemsAround(a.pos).where((item) => item.field.isSnake);
+      int smallerVersions = 0;
+      for (final snake in snakesAround) {
+        if (snake.version < b.version) {
+          ++smallerVersions;
+          if (smallerVersions >= a.field.targetNeighbourSnakes) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    return inner(a, b) || inner(b, a);
+  }
+
   static FieldInfo Function(BoardVec) _fieldInfoFactory() {
     final versionHolder = _FieldInfoVersionHolder();
     return (pos) => FieldInfo._(pos, versionHolder);
@@ -107,11 +125,36 @@ class _GameViewCell extends StatelessWidget {
               case Field.empty:
                 return ColoredBox(color: fieldInfo.locked ? const Color(0xFF999999) : const Color(0xFFAAAAAA));
               case Field.snake:
-                return const Center(
-                  child: SizedBox.square(
-                    dimension: 20,
-                    child: ColoredBox(color: Colors.black),
-                  ),
+                final connectedFields = model.fields.itemsAround(pos).where((item) => item.field.isSnake).toList();
+                connectedFields.sort((a, b) => a.version.compareTo(b.version));
+
+                final connections = connectedFields.map((field) {
+                  final diff = field.pos - pos;
+
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      left: diff.x < 0 ? 0 : 10,
+                      top: diff.y < 0 ? 0 : 10,
+                      right: diff.x > 0 ? 0 : 10,
+                      bottom: diff.y > 0 ? 0 : 10,
+                    ),
+                    child: ColoredBox(
+                      color: model.isConnectionInvalid(fieldInfo, field) ? Colors.red : Colors.black,
+                    ),
+                  );
+                });
+
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ...connections,
+                    const Center(
+                      child: SizedBox.square(
+                        dimension: 24,
+                        child: ColoredBox(color: Colors.black),
+                      ),
+                    ),
+                  ],
                 );
               case Field.snakeHead:
                 return const ColoredBox(color: Colors.black);

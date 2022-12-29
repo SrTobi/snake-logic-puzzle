@@ -31,15 +31,26 @@ class Board<T> {
   T operator [](BoardVec pos) => get(pos)!;
   void operator []=(BoardVec pos, T value) => _fields[index(pos)] = value;
 
+  Iterable<BoardVec> positionsAround(BoardVec pos) {
+    return BoardVec.directions.map((p) => p + pos).where(contains);
+  }
+
+  Iterable<T> itemsAround(BoardVec pos) {
+    return positionsAround(pos).map((p) => this[p]);
+  }
+
+  bool contains(BoardVec pos) {
+    return 0 <= pos.x && pos.x < width && 0 <= pos.y && pos.y < height;
+  }
+
   int index(BoardVec pos) => pos.y * width + pos.x;
 
   T? get(BoardVec pos) {
-    int i = index(pos);
-
-    if (i < 0 || i >= _fields.length) {
-      return null;
-    } else {
+    if (contains(pos)) {
+      int i = index(pos);
       return _fields[i];
+    } else {
+      return null;
     }
   }
 
