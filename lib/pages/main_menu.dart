@@ -1,10 +1,9 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:logic_snake_puzzle/pages/game_page.dart';
 import 'package:logic_snake_puzzle/stores/level_store.dart';
 
 class MainMenu extends StatelessWidget {
-  const MainMenu();
+  const MainMenu({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +18,7 @@ class MainMenu extends StatelessWidget {
             .map(
               (level) => ListTile(
                 title: const Text("Level"),
-                trailing: Text("${level.width}x${level.height}"),
+                trailing: Text("${level.width}x${level.height} Difficulty: ${level.maxAssumptionDepth}"),
                 onTap: () => GamePage.open(context, gameInfo: level),
               ),
             )
