@@ -8,7 +8,7 @@ import 'package:mobx/mobx.dart';
 class GamePage extends StatefulWidget {
   final GameInfo gameInfo;
 
-  GamePage({super.key, required this.gameInfo});
+  const GamePage({super.key, required this.gameInfo});
 
   @override
   State<GamePage> createState() => _GamePage();
@@ -46,14 +46,16 @@ class _GamePage extends State<GamePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              EmptyPolicyDescriptionView(model: _model),
+              const SizedBox(height: 10),
               GameView(
                 model: _model,
                 onClick: wrapAction1((FieldInfo field) {
                   if (!widget.gameInfo.initialOpen.contains(field.pos)) {
                     if (field.field == Field.unknown) {
-                      field.field = _setSnake.value ? Field.snake : Field.empty;
+                      _model.set(field.pos, _setSnake.value ? Field.snake : Field.empty);
                     } else {
-                      field.field = Field.unknown;
+                      _model.set(field.pos, Field.unknown);
                     }
                   }
                 }),

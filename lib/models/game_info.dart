@@ -15,7 +15,7 @@ extension FieldExt on Field {
   bool get isSnake => this == Field.snake || this == Field.snakeHead;
 }
 
-class EmptyPolicy {
+abstract class EmptyPolicy {
   const EmptyPolicy();
 }
 
@@ -35,15 +35,24 @@ class GameInfo {
   final Board<Field> solution;
   final List<BoardVec> initialOpen;
   final List<BoardVec> solveMoves;
+  final EmptyPolicy emptyPolicy;
+  final int maxAssumptionDepth;
 
   int get width => solution.width;
   int get height => solution.height;
 
-  const GameInfo({required this.solution, required this.initialOpen, required this.solveMoves});
+  const GameInfo({
+    required this.maxAssumptionDepth,
+    required this.solution,
+    required this.initialOpen,
+    required this.solveMoves,
+    required this.emptyPolicy,
+  });
 
   static GameInfo loadFromJson(Map<String, dynamic> json) {
     int width = json["width"];
     int height = json["height"];
+    int maxAssumptionDepth = json["max_assumption_depth"];
 
     int field(String name) => (json["fields"][name] as String).codeUnitAt(0);
 
@@ -83,6 +92,24 @@ class GameInfo {
     final initialOpen = (json["initial_open"] as List<dynamic>).map(toVec).toList(growable: false);
     final solveMoves = (json["moves"] as List<dynamic>).map(toVec).toList(growable: false);
 
-    return GameInfo(solution: solution, initialOpen: initialOpen, solveMoves: solveMoves);
+    EmptyPolicy? emptyPolicy;
+    final emptyPolicyRoot = json["empty_policy"];
+    final ascending = emptyPolicyRoot["Ascending"];
+
+    if (ascending != null) {
+      emptyPolicy = AscendingEmptyPolicy(top: ascending["top"] as int);
+    }
+
+    if (emptyPolicy == null) {
+      throw Exception("No empty policy in level data");
+    }
+
+    return GameInfo(
+      maxAssumptionDepth: maxAssumptionDepth,
+      solution: solution,
+      initialOpen: initialOpen,
+      solveMoves: solveMoves,
+      emptyPolicy: emptyPolicy,
+    );
   }
 }
