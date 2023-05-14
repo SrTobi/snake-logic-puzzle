@@ -1,5 +1,10 @@
+#![feature(iter_advance_by)]
+#![feature(get_mut_unchecked)]
+#![feature(binary_heap_drain_sorted)]
+
 use core::fmt;
 use std::collections::HashMap;
+use std::hash::Hash;
 
 use board::{Board, BoardUnion, BoardUnionFind, BoardVec};
 
@@ -7,9 +12,17 @@ use crate::board::BoardUnionId;
 
 pub mod ai;
 pub mod board;
-mod solver;
+pub mod list;
+pub mod serialize;
+pub mod solver;
 
 pub use solver::*;
+
+struct Throwaway;
+
+impl<T> Extend<T> for Throwaway {
+  fn extend<I: IntoIterator<Item = T>>(&mut self, _: I) {}
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Field {
@@ -66,7 +79,7 @@ pub enum SnakeConnectedness {
   Distributed,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum EmptyPolicy {
   None,
   Fix(usize),
@@ -389,6 +402,21 @@ impl State {
 
   pub fn unknowns(&self) -> u32 {
     self.unknowns
+  }
+}
+
+impl Eq for State {}
+
+impl PartialEq for State {
+  fn eq(&self, other: &Self) -> bool {
+    self.board == other.board && self.empty_policy == other.empty_policy
+  }
+}
+
+impl Hash for State {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    self.board.hash(state);
+    self.empty_policy.hash(state);
   }
 }
 

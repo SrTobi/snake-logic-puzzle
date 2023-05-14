@@ -6,6 +6,7 @@ use std::ops::{self, Add, Index, IndexMut, Neg, Sub};
 use rand::distributions::Standard;
 use rand::prelude::Distribution;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
 pub static NORTH: BoardVec = BoardVec::new(0, -1);
 pub static NORTH_EAST: BoardVec = BoardVec::new(1, -1);
@@ -29,6 +30,16 @@ pub struct BoardVec {
   pub x: i32,
   pub y: i32,
 }
+
+impl Serialize for BoardVec {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer,
+  {
+    serializer.collect_seq([self.x, self.y])
+  }
+}
+
 
 impl BoardVec {
   pub const fn new(x: i32, y: i32) -> BoardVec {

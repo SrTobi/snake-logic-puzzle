@@ -1,21 +1,30 @@
-use snake::board::BoardVec;
-use snake::{solve, Field, State};
+use std::collections::hash_map::DefaultHasher;
+use std::fs;
+use std::hash::{Hash, Hasher};
 
+use snake::board::BoardVec;
+use snake::serialize::LevelData;
+use snake::{find_solution_path, solve, Field, State};
+
+#[allow(unused)]
 fn main() {
-  let width = 10;
-  let height = 10;
+  let width = 8;
+  let height = 8;
 
   let mut a = 0;
   loop {
     let game = State::new_rand(width, height, snake::EmptyPolicy::new_ascending(width, height));
     let mut results = Vec::new();
-    solve(game, &mut results, 2);
+    solve(game.clone(), &mut results, 2);
 
     if !results.is_empty() {
-      for ele in results {
+      for ele in results.iter() {
         println!("{:?}", ele);
       }
-      return;
+
+      let solution = results.first().unwrap();
+      show_solution(&game, solution, 1);
+
     } else {
       println!("faild ({a})...");
       a += 1;
@@ -89,14 +98,8 @@ fn main3() {
   }
 }
 
-struct Throwaway;
-
-impl<T> Extend<T> for Throwaway {
-  fn extend<I: IntoIterator<Item = T>>(&mut self, _: I) {}
-}
-
 #[allow(unused)]
-fn main4() {
+fn main5() {
   let game = State::new(
     10,
     10,
@@ -108,9 +111,11 @@ fn main4() {
 
   let mut results = Vec::new();
   //let mut s = Vec::new();
-  solve(game, &mut results, 1);
-  println!("{:?}", results);
+  solve(game.clone(), &mut results, 10);
+  let solution = results.last().unwrap();
+  println!("{:?}", solution);
 
+  //show_solution(&game, solution);
   /*if let Ok(SolveResult::Contradiction) = r {
     s.sort_by_key(|s| u32::MAX - s.1.unknowns());
 
@@ -119,4 +124,32 @@ fn main4() {
       println!("{:?}", s);
     }
   }*/
+}
+
+fn show_solution(initial: &State, solution: &State, max_assume_depth: usize) {
+  let (initial_open, moves) = find_solution_path(initial.clone(), solution, max_assume_depth);
+
+  let mut state = initial.clone();
+
+  for &pos in initial_open.iter() {
+    state.set(pos, solution.field(pos));
+  }
+
+  println!("{:?}", state);
+
+  let level = LevelData::new(solution, initial_open, moves, max_assume_depth);
+  let serialized = serde_json::to_string_pretty(&level).unwrap();
+  println!("{serialized}");
+
+  let hasher = &mut DefaultHasher::new();
+  initial.hash(hasher);
+  let filename = format!(
+    "./level_out/level_{}x{}_{}_{}.json",
+    initial.width(),
+    initial.height(),
+    max_assume_depth,
+    hasher.finish()
+  );
+  let _ = fs::create_dir("./level_out");
+  fs::write(filename, serialized).unwrap();
 }
