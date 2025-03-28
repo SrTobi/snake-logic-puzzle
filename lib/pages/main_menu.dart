@@ -12,6 +12,18 @@ class MainMenu extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Snake Logic Puzzle'),
+        actions: [
+          PopupMenuButton<Null>(
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                child: Text("Licenses"),
+              )
+            ],
+            onSelected: (_) => {
+              showLicensePage(context: context)
+            },
+          )
+        ],
       ),
       body: ListView(
         children: levels
