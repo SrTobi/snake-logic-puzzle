@@ -1,4 +1,4 @@
-# logic_snake_puzzle
+# snake_logic_puzzle
 
 A funny logic game.
 

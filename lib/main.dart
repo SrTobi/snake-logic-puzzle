@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:logic_snake_puzzle/pages/main_menu.dart';
-import 'package:logic_snake_puzzle/stores/level_store.dart';
-import 'package:logic_snake_puzzle/utils/developer.dart';
+import 'package:snake_logic_puzzle/pages/main_menu.dart';
+import 'package:snake_logic_puzzle/stores/level_store.dart';
+import 'package:snake_logic_puzzle/utils/developer.dart';
 import 'package:provider/provider.dart';
 
 Future<void> main() async {

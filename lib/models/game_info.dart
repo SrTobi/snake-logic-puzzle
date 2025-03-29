@@ -1,4 +1,4 @@
-import 'package:logic_snake_puzzle/utils/board.dart';
+import 'package:snake_logic_puzzle/utils/board.dart';
 
 enum Field {
   unknown(-1),

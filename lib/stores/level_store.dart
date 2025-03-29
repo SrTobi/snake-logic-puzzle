@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:logic_snake_puzzle/models/game_info.dart';
-import 'package:logic_snake_puzzle/utils/developer.dart';
+import 'package:snake_logic_puzzle/models/game_info.dart';
+import 'package:snake_logic_puzzle/utils/developer.dart';
 import 'package:provider/provider.dart';
 
 class LevelStore {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:logic_snake_puzzle/pages/game_page.dart';
-import 'package:logic_snake_puzzle/stores/level_store.dart';
+import 'package:snake_logic_puzzle/pages/game_page.dart';
+import 'package:snake_logic_puzzle/stores/level_store.dart';
 
 class MainMenu extends StatelessWidget {
   const MainMenu({super.key});

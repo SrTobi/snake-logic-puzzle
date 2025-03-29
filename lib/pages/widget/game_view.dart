@@ -2,8 +2,8 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:logic_snake_puzzle/models/game_info.dart';
-import 'package:logic_snake_puzzle/utils/board.dart';
+import 'package:snake_logic_puzzle/models/game_info.dart';
+import 'package:snake_logic_puzzle/utils/board.dart';
 import 'package:mobx/mobx.dart';
 
 abstract class _EmptyPolicyTracker {

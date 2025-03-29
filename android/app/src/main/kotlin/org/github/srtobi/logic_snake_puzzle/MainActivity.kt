@@ -1,4 +1,4 @@
-package org.github.srtobi.logic_snake_puzzle
+package org.github.srtobi.snake_logic_puzzle
 
 import io.flutter.embedding.android.FlutterActivity
 

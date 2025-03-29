@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:logic_snake_puzzle/models/game_info.dart';
-import 'package:logic_snake_puzzle/pages/widget/game_view.dart';
-import 'package:logic_snake_puzzle/utils/wrap_action.dart';
+import 'package:snake_logic_puzzle/models/game_info.dart';
+import 'package:snake_logic_puzzle/pages/widget/game_view.dart';
+import 'package:snake_logic_puzzle/utils/wrap_action.dart';
 import 'package:mobx/mobx.dart';
 
 class GamePage extends StatefulWidget {
