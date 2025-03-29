@@ -7,8 +7,6 @@ import 'package:logic_snake_puzzle/utils/developer.dart';
 import 'package:provider/provider.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
   runZonedGuarded<Future<void>>(
     guardedMain,
     (error, stack) {
@@ -18,6 +16,8 @@ Future<void> main() async {
 }
 
 Future<void> guardedMain() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   final levelStore = LevelStore.load();
   runApp(
     MultiProvider(

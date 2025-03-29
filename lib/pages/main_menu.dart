@@ -13,10 +13,11 @@ class MainMenu extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Snake Logic Puzzle'),
         actions: [
-          PopupMenuButton<Null>(
+          PopupMenuButton<String>(
             itemBuilder: (context) => [
               PopupMenuItem(
                 child: Text("Licenses"),
+                value: "show licenses",
               )
             ],
             onSelected: (_) => {
@@ -29,11 +30,11 @@ class MainMenu extends StatelessWidget {
         children: levels
             .map(
               (level) => ListTile(
-                title: const Text("Level"),
-                trailing: Text("${level.width}x${level.height} Difficulty: ${level.maxAssumptionDepth}"),
-                onTap: () => GamePage.open(context, gameInfo: level),
-              ),
-            )
+            title: const Text("Level"),
+            trailing: Text("${level.width}x${level.height} Difficulty: ${level.maxAssumptionDepth}"),
+            onTap: () => GamePage.open(context, gameInfo: level),
+          ),
+        )
             .toList(growable: false),
       ),
     );
