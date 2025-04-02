@@ -2,15 +2,8 @@
 
 A funny logic game.
 
-## Getting Started
+## Data Protection
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Snake Logic Puzzle does not collect any personal/device information.
+- The game is open source so nothing is hidden!
+- This application does not require access to internet, so you can be sure it does not send any personal/device information to any other source and it does not receive any information from other sources.
